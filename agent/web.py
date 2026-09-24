@@ -38,6 +38,11 @@ MAX_TURNS_PER_DAY = int(os.environ.get("MAX_TURNS_PER_DAY", 400))
 MAX_CONCURRENT_CHATS = int(os.environ.get("MAX_CONCURRENT_CHATS", 20))
 IDLE_TIMEOUT_SECONDS = int(os.environ.get("IDLE_TIMEOUT_SECONDS", 900))
 
+# Free hosts (e.g. Render) sleep after ~15 idle minutes. If the app knows its public
+# URL (Render sets RENDER_EXTERNAL_URL), it pings itself so judges never hit a cold start.
+KEEP_AWAKE_URL = os.environ.get("KEEP_AWAKE_URL") or os.environ.get("RENDER_EXTERNAL_URL")
+KEEP_AWAKE_SECONDS = int(os.environ.get("KEEP_AWAKE_SECONDS", 600))
+
 
 class Limits:
     def __init__(self):
@@ -70,6 +75,17 @@ def client_ip(ws):
     return forwarded.split(",")[0].strip() or (ws.client.host if ws.client else "unknown")
 
 
+async def keep_awake(url):
+    import httpx2
+    async with httpx2.AsyncClient(timeout=30) as client:
+        while True:
+            await asyncio.sleep(KEEP_AWAKE_SECONDS)
+            try:
+                await client.get(f"{url.rstrip('/')}/healthz")
+            except Exception:
+                logging.warning("keep-awake ping failed", exc_info=True)
+
+
 @asynccontextmanager
 async def lifespan(app):
     async with AsyncExitStack() as stack:
@@ -79,7 +95,10 @@ async def lifespan(app):
             "kb": await stack.enter_async_context(KnowledgeBase()),
             "raw": await stack.enter_async_context(RawContent()),
         }
+        pinger = asyncio.create_task(keep_awake(KEEP_AWAKE_URL)) if KEEP_AWAKE_URL else None
         yield
+        if pinger:
+            pinger.cancel()
 
 
 app = FastAPI(lifespan=lifespan)

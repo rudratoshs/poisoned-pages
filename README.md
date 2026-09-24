@@ -11,7 +11,7 @@
 ![taintgate](https://img.shields.io/badge/guard-taintgate-f0b429)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-<img src="docs/screenshot.png" alt="Brightside Bikes support chat with the live security trace" width="820">
+<img src="docs/demo-warranty.png" alt="Live demo: the agent tries to email customer data to a fake claims partner; the security trace shows the DENY decisions and the reply carries a security notice" width="820">
 
 </div>
 

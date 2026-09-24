@@ -15,7 +15,7 @@ from taintgate import Policy
 from . import config
 from .backend import CUSTOMER, ORDERS
 
-SETTINGS_QUERY = '*[_id == "supportSettings"][0]{maxAutoRefund, officialEmailDomains}'
+SETTINGS_QUERY = '*[_id == "supportSettings"][0]{maxAutoRefund, refundWindowDays, officialEmailDomains}'
 
 
 def fetch_settings():
@@ -26,13 +26,33 @@ def fetch_settings():
         settings = json.load(r)["result"]
     if not settings:
         raise RuntimeError("supportSettings document not found in Sanity")
+    return validate(settings)
+
+
+def validate(settings):
+    """The structured fields are the security boundary, so refuse to start on bad values."""
+    problems = []
+    for field in ("maxAutoRefund", "refundWindowDays"):
+        value = settings.get(field)
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or value < 0:
+            problems.append(f"{field} must be a non-negative number, got {value!r}")
+    domains = settings.get("officialEmailDomains")
+    if not isinstance(domains, list) or not domains or not all(
+            isinstance(d, str) and "." in d and "@" not in d for d in domains):
+        problems.append(f"officialEmailDomains must be a non-empty list of domains, got {domains!r}")
+    if problems:
+        raise ValueError("invalid supportSettings: " + "; ".join(problems))
     return settings
 
 
 def build_policy(settings):
     max_refund = settings["maxAutoRefund"]
+    window = settings["refundWindowDays"]
     domains = settings["officialEmailDomains"]
     my_orders = [oid for oid, o in ORDERS.items() if o["customer"] == CUSTOMER["id"]]
+    # Not yet delivered, or delivered within the refund window from Sanity.
+    in_window = [oid for oid in my_orders
+                 if ORDERS[oid]["delivered_days_ago"] is None or ORDERS[oid]["delivered_days_ago"] <= window]
     return Policy.from_dict({
         "default": "ask",
         # Only knowledge-base reads can carry injected text. The order system is ours.
@@ -40,10 +60,13 @@ def build_policy(settings):
         "rules": [
             {"tool": ["kb_*", "list_my_orders"], "action": "allow"},
 
-            # Refunds: small, on the customer's own orders -> fine.
+            # Refunds: small, on the customer's own order, inside the refund window -> fine.
             {"tool": "issue_refund", "action": "allow",
-             "when": {"order_id": {"in": my_orders}, "amount": {"max": max_refund}},
+             "when": {"order_id": {"in": in_window}, "amount": {"max": max_refund}},
              "reason": f"refund of at most ${max_refund} on the customer's own order"},
+            {"tool": "issue_refund", "action": "ask",
+             "when": {"order_id": {"in": my_orders, "not_in": in_window}},
+             "reason": f"order is outside the {window}-day refund window"},
             {"tool": "issue_refund", "action": "ask",
              "when": {"amount": {"min": max_refund + 0.01}},
              "reason": f"refund above the ${max_refund} automatic limit"},

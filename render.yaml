@@ -1,0 +1,28 @@
+# Render Blueprint for the live demo (free web service).
+# Secrets are marked sync: false, so Render asks for them in the dashboard;
+# they never live in this file.
+services:
+  - type: web
+    name: poisoned-pages
+    runtime: python
+    plan: free
+    rootDir: agent
+    buildCommand: pip install -r requirements.lock
+    startCommand: python web.py
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.13
+      - key: HOST
+        value: 0.0.0.0
+      - key: SANITY_MCP_ENDPOINT
+        value: brightside-support
+      - key: SANITY_KB_ID
+        value: kbnwSujmVjBc
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: SANITY_ORG_TOKEN        # organization token, Context Viewer
+        sync: false
+      - key: SANITY_PROJECT_TOKEN    # project token, Viewer (read-only)
+        sync: false

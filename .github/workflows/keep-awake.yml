@@ -1,0 +1,16 @@
+name: keep demo awake
+
+# Render's free tier sleeps after 15 idle minutes; judges shouldn't wait for a
+# cold start. Pings the health endpoint every 10 minutes during judging.
+# Set the repository variable DEMO_URL (Settings > Secrets and variables > Actions > Variables).
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    if: vars.DEMO_URL != ''
+    runs-on: ubuntu-latest
+    steps:
+      - run: curl -fsS --max-time 120 "${{ vars.DEMO_URL }}/healthz"

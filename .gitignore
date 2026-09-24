@@ -10,3 +10,6 @@ __pycache__/
 *.env
 .env*
 .DS_Store
+
+# test artefacts
+e2e-shots/

@@ -10,6 +10,10 @@ from . import config
 
 PREFIX = "kb_"   # every knowledge-base tool is exposed to Claude as kb_<name>
 
+# Only these read-only Knowledge Base tools become model capabilities, whatever
+# else the endpoint may expose in future.
+ALLOWED_TOOLS = {"initial_context", "knowledge_base_read"}
+
 
 class KnowledgeBase:
     """Async context manager: `async with KnowledgeBase() as kb: kb.tools, await kb.call(...)`."""
@@ -32,7 +36,10 @@ class KnowledgeBase:
             "name": PREFIX + t.name,
             "description": t.description or "",
             "input_schema": t.input_schema,
-        } for t in listed.tools]
+        } for t in listed.tools if t.name in ALLOWED_TOOLS]
+        missing = ALLOWED_TOOLS - {t.name for t in listed.tools}
+        if missing:
+            raise RuntimeError(f"MCP endpoint is missing Knowledge Base tools: {sorted(missing)}")
         return self
 
     async def __aexit__(self, *exc):

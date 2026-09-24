@@ -140,14 +140,15 @@ const ICON = { allow: "✅ ALLOW", ask: "✋ ASK", deny: "⛔ DENY" };
 
 function onEvent(e) {
   if (e.type === "kb_read") addTrace("kb", `📚 read ${esc(e.tool)}`, `${short(e.args)} → ${e.chars} chars (untrusted)`);
-  else if (e.type === "gate") addTrace(e.action, `${ICON[e.action]} ${esc(e.tool)}`, `${short(e.args)}\n${(e.reasons || []).join("; ") || "default policy"}`);
+  else if (e.type === "gate" && !(e.action === "ask" && e.tool !== "reply_mentions_email"))   // asks get their own card
+    addTrace(e.action, `${ICON[e.action]} ${esc(e.tool)}`, `${short(e.args)}\n${(e.reasons || []).join("; ") || "default policy"}`);
   else if (e.type === "action") addTrace("done", `⚙️ executed ${esc(e.tool)}`, e.result);
   else if (e.type === "approval") addTrace(e.approved ? "allow" : "deny", e.approved ? "🙋 reviewer approved" : "🙋 reviewer declined", "");
   else if (e.type === "refusal") addTrace("deny", "🚫 model refused", e.category || "");
 }
 
 function onApproval(req) {
-  const el = addTrace("ask", `✋ needs a human: ${esc(req.tool)}`, `${short(req.args)}\n${req.reasons.join("; ")}`);
+  const el = addTrace("ask", `✋ ASK ${esc(req.tool)}: needs a human`, `${short(req.args)}\n${req.reasons.join("; ")}`);
   const row = document.createElement("div");
   row.className = "approve";
   row.innerHTML = `<button class="yes">Approve</button><button class="no">Decline</button>`;
@@ -192,6 +193,7 @@ for (const s of SUGGESTIONS) {
 fetch("/api/info").then((r) => r.json()).then(({ settings, customer, orders }) => {
   $("limits").className = ""; $("limits").innerHTML =
     `<div class="kv"><span>Max refund without a human</span><span>$${settings.maxAutoRefund}</span></div>` +
+    `<div class="kv"><span>Refund window</span><span>${settings.refundWindowDays} days</span></div>` +
     `<div class="kv"><span>Official email domains</span><span>${settings.officialEmailDomains.map(esc).join(", ")}</span></div>`;
   $("customer").className = ""; $("customer").innerHTML =
     `<div class="kv"><span>${esc(customer.name)}</span><span>${esc(customer.email)}</span></div>` +

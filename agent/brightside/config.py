@@ -17,9 +17,14 @@ MODEL = os.environ.get("AGENT_MODEL", "claude-opus-5")
 ENV_FILE = Path(os.environ.get("SANITY_ENV_FILE", Path(__file__).resolve().parents[3] / "sanity.env"))
 
 
+# Upper-case names for hosts whose secret settings expect them (e.g. Hugging Face Spaces).
+ALIASES = {"project_token": "SANITY_PROJECT_TOKEN", "org_token": "SANITY_ORG_TOKEN"}
+
+
 def secret(name):
-    if name in os.environ:
-        return os.environ[name]
+    for key in (name, ALIASES.get(name)):
+        if key and os.environ.get(key):
+            return os.environ[key]
     if ENV_FILE.exists():
         for line in ENV_FILE.read_text().splitlines():
             m = re.match(r"\s*([A-Za-z_][\w]*)\s*[:=]\s*(.+?)\s*$", line)

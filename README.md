@@ -26,6 +26,14 @@ No login needed. Try the example questions, flip between
 **Approve / Decline** when the agent asks for a human. Refunds and emails are simulated,
 and usage is rate-limited because it calls real models.
 
+### 🎬 Demo video
+
+**[Watch the 2-minute demo](https://github.com/rudratoshs/poisoned-pages/releases/download/demo-video/poisoned-pages-demo.mp4)**
+([subtitles](https://github.com/rudratoshs/poisoned-pages/releases/download/demo-video/poisoned-pages-demo.srt)).
+It was recorded and edited automatically by [`agent/tools/record_demo.py`](agent/tools/record_demo.py): real Chrome
+clicking through the app, scenes retaken if the model doesn't show the narrated behaviour, key moments pinned to
+the words that describe them, and the model's thinking time fast-forwarded.
+
 ## 🎯 The idea
 
 Any help center with a community forum lets strangers write text that your AI agent will read.

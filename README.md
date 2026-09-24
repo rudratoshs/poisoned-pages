@@ -28,8 +28,10 @@ and usage is rate-limited because it calls real models.
 
 ### 🎬 Demo video
 
-**[Watch the 2-minute demo](https://github.com/rudratoshs/poisoned-pages/releases/download/demo-video/poisoned-pages-demo.mp4)**
-([subtitles](https://github.com/rudratoshs/poisoned-pages/releases/download/demo-video/poisoned-pages-demo.srt)).
+[![Watch the 2-minute demo on YouTube](https://img.youtube.com/vi/j4T0Cb3qitQ/maxresdefault.jpg)](https://youtu.be/j4T0Cb3qitQ)
+
+**[▶ Watch the 2-minute demo on YouTube](https://youtu.be/j4T0Cb3qitQ)** (with subtitles and chapters;
+also available [as a file](https://github.com/rudratoshs/poisoned-pages/releases/tag/demo-video)).
 It was recorded and edited automatically by [`agent/tools/record_demo.py`](agent/tools/record_demo.py): real Chrome
 clicking through the app, scenes retaken if the model doesn't show the narrated behaviour, key moments pinned to
 the words that describe them, and the model's thinking time fast-forwarded.

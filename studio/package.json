@@ -1,0 +1,21 @@
+{
+  "name": "poisoned-pages-studio",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "sanity dev",
+    "build": "sanity build",
+    "deploy-schema": "sanity schema deploy"
+  },
+  "dependencies": {
+    "@sanity/vision": "^6.16.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "sanity": "^6.16.0",
+    "styled-components": "^6.5.3"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0"
+  }
+}

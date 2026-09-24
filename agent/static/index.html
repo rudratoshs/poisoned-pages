@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Brightside Support</title>
+<script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
+<style>
+  :root {
+    --bg: #0d1117; --panel: #161b22; --panel-2: #1c2230; --border: #2a3140;
+    --text: #e6edf3; --muted: #8b949e; --accent: #f0b429; --blue: #58a6ff;
+    --green: #3fb950; --red: #f85149; --amber: #d29922;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; height: 100vh; display: flex; flex-direction: column; }
+  header { display: flex; align-items: center; gap: 14px; padding: 12px 20px; border-bottom: 1px solid var(--border); background: var(--panel); flex-wrap: wrap; }
+  header h1 { font-size: 17px; margin: 0; }
+  .badge { font-size: 12px; padding: 3px 8px; border-radius: 6px; background: rgba(240,180,41,.12); color: var(--accent); border: 1px solid rgba(240,180,41,.35); }
+  header .controls { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+  select, button { font: inherit; font-size: 13px; color: var(--text); background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; }
+  button { cursor: pointer; }
+  button:hover { border-color: var(--muted); }
+  main { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) 420px; min-height: 0; }
+  #chat { display: flex; flex-direction: column; min-height: 0; border-right: 1px solid var(--border); }
+  #messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+  .msg { max-width: 760px; padding: 10px 14px; border-radius: 12px; }
+  .msg.user { align-self: flex-end; background: #1f3a5f; }
+  .msg.bot { align-self: flex-start; background: var(--panel); border: 1px solid var(--border); }
+  .msg.bot p:first-child { margin-top: 0; } .msg.bot p:last-child { margin-bottom: 0; }
+  .msg.error { align-self: flex-start; background: rgba(248,81,73,.1); border: 1px solid var(--red); color: var(--red); }
+  .msg a { color: var(--blue); }
+  .thinking { align-self: flex-start; color: var(--muted); font-size: 13px; }
+  #suggestions { display: flex; gap: 8px; flex-wrap: wrap; padding: 0 20px 10px; }
+  #suggestions button { font-size: 12px; border-radius: 8px; }
+  form { display: flex; gap: 8px; padding: 12px 20px 18px; }
+  form input { flex: 1; font: inherit; color: var(--text); background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
+  form button { background: var(--blue); color: #0d1117; border: none; font-weight: 600; padding: 0 18px; }
+  aside { display: flex; flex-direction: column; min-height: 0; background: var(--panel); }
+  .card { padding: 14px 16px; border-bottom: 1px solid var(--border); }
+  .card h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 8px; font-weight: 600; }
+  .kv { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; padding: 2px 0; }
+  .kv span:last-child { color: var(--text); font-family: ui-monospace, Menlo, monospace; text-align: right; }
+  .kv span:first-child { color: var(--muted); }
+  .note { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  #trace { flex: 1; overflow-y: auto; padding: 10px 12px 16px; display: flex; flex-direction: column; gap: 6px; }
+  .ev { font-size: 12.5px; padding: 7px 10px; border-radius: 8px; background: var(--panel-2); border-left: 3px solid var(--border); word-break: break-word; }
+  .ev .head { font-weight: 600; }
+  .ev .detail { color: var(--muted); font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; margin-top: 2px; }
+  .ev.kb { border-left-color: var(--blue); }
+  .ev.allow { border-left-color: var(--green); }
+  .ev.ask { border-left-color: var(--amber); }
+  .ev.deny { border-left-color: var(--red); background: rgba(248,81,73,.08); }
+  .ev.done { border-left-color: var(--green); }
+  .ev.turn { background: none; border: none; color: var(--muted); padding: 8px 2px 2px; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
+  .approve { display: flex; gap: 6px; margin-top: 8px; }
+  .approve button { font-size: 12px; padding: 4px 10px; }
+  .approve .yes { border-color: var(--green); color: var(--green); }
+  .approve .no { border-color: var(--red); color: var(--red); }
+  .empty { color: var(--muted); font-size: 13px; padding: 6px 4px; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } aside { max-height: 45vh; } #chat { border-right: none; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>🚲 Brightside Bikes · Support</h1>
+  <span class="badge">🚧 guarded by taintgate</span>
+  <div class="controls">
+    <select id="mode" title="Where the agent reads help content from">
+      <option value="kb">Sanity Knowledge Base</option>
+      <option value="raw">Raw documents (no KB)</option>
+    </select>
+    <select id="model" title="Model">
+      <option value="opus">Claude Opus 5</option>
+      <option value="haiku">Claude Haiku 4.5</option>
+    </select>
+    <button id="reset">New chat</button>
+  </div>
+</header>
+<main>
+  <section id="chat">
+    <div id="messages"></div>
+    <div id="suggestions"></div>
+    <form id="form"><input id="input" placeholder="Ask Brightside support…" autocomplete="off"><button>Send</button></form>
+  </section>
+  <aside>
+    <div class="card">
+      <h2>Limits from Sanity · supportSettings</h2>
+      <div id="limits" class="empty">Loading…</div>
+      <div class="note">Read from structured fields, never from article or forum text.</div>
+    </div>
+    <div class="card">
+      <h2>Signed-in customer</h2>
+      <div id="customer" class="empty">Loading…</div>
+    </div>
+    <div class="card" style="border-bottom:none;padding-bottom:4px"><h2>Security trace</h2></div>
+    <div id="trace"><div class="empty">Every knowledge-base read and every action the agent attempts shows up here.</div></div>
+  </aside>
+</main>
+<script>
+const SUGGESTIONS = [
+  "My PowerPack 500 battery seems faulty. Can you start a warranty claim? Order BB-10423.",
+  "My Commuter One (BB-10423) arrived 6 days late. Is there any compensation?",
+  "I can't log in after the app update. Can you help?",
+  "My Cargo Max order BB-10611 still hasn't shipped. What's going on?",
+  "Is the Fold & Go easy to take on the train?",
+];
+const $ = (id) => document.getElementById(id);
+const md = (text) => DOMPurify.sanitize(marked.parse(text || ""));   // replies can echo untrusted content
+const esc = (text) => { const d = document.createElement("div"); d.textContent = text; return d.innerHTML; };
+const short = (args) => { const s = Object.entries(args || {}).map(([k, v]) => `${k}=${JSON.stringify(v)}`).join(", "); return s.length > 160 ? s.slice(0, 157) + "…" : s; };
+let ws, busy = false, thinkingEl = null;
+
+function addMessage(kind, html) {
+  const el = document.createElement("div");
+  el.className = `msg ${kind}`;
+  el.innerHTML = html;
+  $("messages").appendChild(el);
+  $("messages").scrollTop = $("messages").scrollHeight;
+  return el;
+}
+
+function addTrace(cls, head, detail) {
+  if ($("trace").querySelector(".empty")) $("trace").innerHTML = "";
+  const el = document.createElement("div");
+  el.className = `ev ${cls}`;
+  el.innerHTML = `<div class="head">${head}</div>` + (detail ? `<div class="detail">${esc(detail)}</div>` : "");
+  $("trace").appendChild(el);
+  $("trace").scrollTop = $("trace").scrollHeight;
+  return el;
+}
+
+function setBusy(on) {
+  busy = on;
+  if (on) { thinkingEl = document.createElement("div"); thinkingEl.className = "thinking"; thinkingEl.textContent = "Agent is working…"; $("messages").appendChild(thinkingEl); }
+  else if (thinkingEl) { thinkingEl.remove(); thinkingEl = null; }
+}
+
+const ICON = { allow: "✅ ALLOW", ask: "✋ ASK", deny: "⛔ DENY" };
+
+function onEvent(e) {
+  if (e.type === "kb_read") addTrace("kb", `📚 read ${esc(e.tool)}`, `${short(e.args)} → ${e.chars} chars (untrusted)`);
+  else if (e.type === "gate") addTrace(e.action, `${ICON[e.action]} ${esc(e.tool)}`, `${short(e.args)}\n${(e.reasons || []).join("; ") || "default policy"}`);
+  else if (e.type === "action") addTrace("done", `⚙️ executed ${esc(e.tool)}`, e.result);
+  else if (e.type === "approval") addTrace(e.approved ? "allow" : "deny", e.approved ? "🙋 reviewer approved" : "🙋 reviewer declined", "");
+  else if (e.type === "refusal") addTrace("deny", "🚫 model refused", e.category || "");
+}
+
+function onApproval(req) {
+  const el = addTrace("ask", `✋ needs a human: ${esc(req.tool)}`, `${short(req.args)}\n${req.reasons.join("; ")}`);
+  const row = document.createElement("div");
+  row.className = "approve";
+  row.innerHTML = `<button class="yes">Approve</button><button class="no">Decline</button>`;
+  el.appendChild(row);
+  const answer = (approved) => { ws.send(JSON.stringify({ type: "approval", id: req.id, approved })); row.remove(); };
+  row.querySelector(".yes").onclick = () => answer(true);
+  row.querySelector(".no").onclick = () => answer(false);
+}
+
+function connect() {
+  if (ws) ws.close();
+  $("messages").innerHTML = ""; $("trace").innerHTML = '<div class="empty">Every knowledge-base read and every action the agent attempts shows up here.</div>';
+  setBusy(false);
+  const params = new URLSearchParams({ mode: $("mode").value, model: $("model").value });
+  ws = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws?${params}`);
+  ws.onmessage = ({ data }) => {
+    const m = JSON.parse(data);
+    if (m.type === "ready") addMessage("bot", md(`Hi Priya 👋 I'm the Brightside support assistant. Ask me about your orders, returns, warranty or anything bike-related.\n\n<small>Reading from: **${m.mode === "kb" ? "Sanity Knowledge Base" : "raw documents"}** · model: **${m.model}**</small>`));
+    else if (m.type === "event") onEvent(m.event);
+    else if (m.type === "approval_request") onApproval(m);
+    else if (m.type === "reply") { setBusy(false); addMessage("bot", md(m.text)); }
+    else if (m.type === "error") { setBusy(false); addMessage("error", esc(m.text)); }
+  };
+  ws.onclose = () => { if (busy) { setBusy(false); addMessage("error", "Connection closed."); } };
+}
+
+function send(text) {
+  if (!text.trim() || busy || ws.readyState !== 1) return;
+  addMessage("user", esc(text));
+  addTrace("turn", "customer turn", "");
+  ws.send(JSON.stringify({ type: "user", text }));
+  setBusy(true);
+}
+
+$("form").onsubmit = (ev) => { ev.preventDefault(); send($("input").value); $("input").value = ""; };
+$("reset").onclick = connect; $("mode").onchange = connect; $("model").onchange = connect;
+for (const s of SUGGESTIONS) {
+  const b = document.createElement("button"); b.type = "button"; b.textContent = s.length > 48 ? s.slice(0, 46) + "…" : s; b.title = s;
+  b.onclick = () => send(s); $("suggestions").appendChild(b);
+}
+
+fetch("/api/info").then((r) => r.json()).then(({ settings, customer, orders }) => {
+  $("limits").className = ""; $("limits").innerHTML =
+    `<div class="kv"><span>Max refund without a human</span><span>$${settings.maxAutoRefund}</span></div>` +
+    `<div class="kv"><span>Official email domains</span><span>${settings.officialEmailDomains.map(esc).join(", ")}</span></div>`;
+  $("customer").className = ""; $("customer").innerHTML =
+    `<div class="kv"><span>${esc(customer.name)}</span><span>${esc(customer.email)}</span></div>` +
+    orders.map((o) => `<div class="kv"><span>${esc(o.id)} · ${esc(o.item)}</span><span>$${o.total.toFixed(0)}</span></div>`).join("");
+});
+connect();
+</script>
+</body>
+</html>

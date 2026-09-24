@@ -1,0 +1,12 @@
+# dependencies and builds
+node_modules/
+studio/dist/
+studio/.sanity/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+# secrets never live in this repo (they are read from ../sanity.env)
+*.env
+.env*
+.DS_Store

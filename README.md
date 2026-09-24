@@ -19,7 +19,9 @@
 
 ## 🌐 Live demo
 
-**Coming shortly** (deploying to Render). Try the example questions, flip between
+### 👉 [poisoned-pages.onrender.com](https://poisoned-pages.onrender.com)
+
+No login needed. Try the example questions, flip between
 **Sanity Knowledge Base / Raw documents** and **Claude Opus 5 / Haiku 4.5**, and use
 **Approve / Decline** when the agent asks for a human. Refunds and emails are simulated,
 and usage is rate-limited because it calls real models.
